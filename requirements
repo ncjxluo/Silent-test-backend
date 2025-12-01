@@ -1,0 +1,9 @@
+fastapi==0.119.0
+python-jose==3.5.0
+uvicorn==0.38.0
+sqlmodel[asyncio]==0.0.27
+asyncmy==0.2.10
+loguru==0.7.3
+greenlet==3.2.4
+arrow==1.4.0
+sqlparse==0.5.3
