@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from typing import List
 from app.core.dependencies import get_current_user
 from app.services.ifaceauto.api_reports import ApiReportsService
-from app.schemas.ifaceauto.api_report_schema import GroupedSuitesResponse, PlansResponse, CasesStatisticResponse,CasesResponse,PathSelectResponse
+from app.schemas.ifaceauto.api_report_schema import GroupedSuitesResponse, PlansResponse, CasesStatisticResponse,CasesResponse,PathSelectResponse,EditCaseRequest
 from app.schemas.base import ApiResponse
 
 
@@ -21,7 +21,7 @@ async def get_api_all_reports(current_user_key: str = Depends(get_current_user))
 
 
 @router.get("/get_api_all_plans",response_model=ApiResponse[PlansResponse])
-async def get_api_all_plans(suite_key:str = 0, current_page:int = 1, current_count:int = 30, current_user_key: str = Depends(get_current_user)):
+async def get_api_all_plans(suite_key:str = '-1111111', current_page:int = 1, current_count:int = 30, current_user_key: str = Depends(get_current_user)):
     plans = await ApiReportsService.get_all_plans(suite_key, current_page, current_count)
     return ApiResponse(data=plans) # type: ignore
 
@@ -36,12 +36,18 @@ async def get_api_all_cases_statistic(suite_key:str = "0", plan_key: str = "0", 
 async def get_api_all_cases(suite_key:str = "0", plan_key: str = "0", current_page:int = 1, current_count:int = 30, path:str = None, status:str = None, s_time:str = None, e_time:str = None , current_user_key: str = Depends(get_current_user)):
     print(status)
     data = await ApiReportsService.get_cases(suite_key, plan_key, current_page, current_count, path, status, s_time, e_time)
-
     return ApiResponse(data=data) # type: ignore
 
 
 @router.get("/get_api_path_select", response_model=ApiResponse[List[PathSelectResponse]])
-async def get_api_path_select(suite_key:str = "0", plan_key: str = "0"):
+async def get_api_path_select(suite_key:str = "0", plan_key: str = "0",current_user_key: str = Depends(get_current_user)):
     data = await ApiReportsService.get_path_select(suite_key,plan_key)
     print(data)
     return ApiResponse(data=data) # type: ignore
+
+@router.post("/edit_api_cases", response_model=ApiResponse)
+async def edit_api_cases(obj:EditCaseRequest, current_user_key: str = Depends(get_current_user)):
+    res = await ApiReportsService.edit_case(
+        obj.suite_key, obj.plan_key, obj.case_key, obj.remarks
+    )
+    return ApiResponse(data=res) # type: ignore

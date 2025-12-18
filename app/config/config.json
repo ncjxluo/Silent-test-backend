@@ -18,7 +18,7 @@
       "port": 3306,
       "user": "admin",
       "password": "whdata123",
-      "schema": "str"
+      "schema": "str_test_lwc"
     },
     "redis": {
 

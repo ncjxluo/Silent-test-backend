@@ -41,10 +41,14 @@ class ApiReportsService:
 
     @staticmethod
     async def get_all_plans(suite_key: str, current_page:int = 1, current_count:int = 30):
-        plans: List[StrTestPlan] = await ApiReportsDao.get_all_plans_new(suite_key, current_page, current_count)
-        total_count = await ApiReportsDao.get_all_plans_counts(suite_key)
+        if suite_key == '-1111111':
+            plans: List[StrTestPlan] = []
+            total_count = [0]
+        else:
+            plans: List[StrTestPlan] = await ApiReportsDao.get_all_plans_new(suite_key, current_page, current_count)
+            total_count = await ApiReportsDao.get_all_plans_counts(suite_key)
+        print(plans)
         print(f"services 层 的{plans}")
-
         return {"total_count": total_count[0], "plans": plans}
 
     @staticmethod
@@ -61,7 +65,7 @@ class ApiReportsService:
             basic_data = {field: "暂无数据" for field in basic_fields}
         performance_fields = [
             "case_path", "request_count", "avg_response_time",
-            "min_response_time", "max_response_time", "median", "p90_response_time"
+            "min_response_time", "max_response_time", "median", "p90_response_time", "p95_response_time", "p99_response_time"
         ]
         case_statistics = []
         if cases_performance_indicator:
@@ -90,11 +94,14 @@ class ApiReportsService:
             dic1 = dict()
             dic1["case_key"] = case_key
             dic1["case_status"] = "success"
+            dic1["remarks"] = None
             c_lis = list()
             for item1 in group:
+                if dic1["remarks"] is None:
+                    dic1["remarks"] = item1.remarks
                 if "precheck" in item1.request_url:
                     dic1["sql"] = json.loads(item1.request_param).get("sql")
-                if "失败" in str(item1.assert_res_sign) and dic1["case_status"] == "success":
+                if item1.case_status == 1 and dic1["case_status"] == "success":
                     dic1["case_status"] = "fail"
                 if is_empty(path):
                     c_lis.append(item1)
@@ -111,3 +118,8 @@ class ApiReportsService:
         res = await ApiReportsDao.get_case_path_select(suite_key, plan_key)
         data = [ {"path": item} for item in res]
         return data
+
+    @staticmethod
+    async def edit_case(suite_key: str, plan_key: str, case_key:str, remarks:str):
+        res = await ApiReportsDao.edit_case(suite_key, plan_key, case_key, remarks)
+        return res

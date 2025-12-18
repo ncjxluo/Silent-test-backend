@@ -26,5 +26,4 @@ async def agent_heart_beat():
 @router.get("/get_api_agents", response_model=ApiResponse[AgentResponse])
 async def get_api_agents(current_page:int = 1, current_count:int = 30, current_user_key: str = Depends(get_current_user)):
     data = await AgentService.get_all_api_agent(current_page, current_count)
-    print(f"agent{data}")
     return ApiResponse(data=data) # type: ignore

@@ -30,6 +30,7 @@ class ApiPlansResponse(BaseModel):
     plan_key: Optional[str]
     plan_name: Optional[str]
     plan_task_sum: Optional[int]
+    failed_case_num: Optional[int]
     status: Optional[str]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
@@ -48,6 +49,8 @@ class CaseStatisticInterFace(BaseModel):
     max_response_time: Optional[str]
     median: Optional[str]
     p90_response_time: Optional[str]
+    p95_response_time: Optional[str]
+    p99_response_time: Optional[str]
 
 
 class CasesStatisticResponse(BaseModel):
@@ -70,13 +73,14 @@ class CasesItem(BaseModel):
     assert_res_details: Optional[str]
     assert_ver_sign: Optional[str]
     assert_time_sign: Optional[str]
-    remarks: Optional[str]
+
 
 
 class CaseResponse(BaseModel):
     case_key: Optional[str]
     case_status: Optional[str]
     sql: Optional[str] = None
+    remarks: Optional[str]
     child_item: Optional[List[CasesItem]] = []
 
 
@@ -87,3 +91,10 @@ class CasesResponse(BaseModel):
 
 class PathSelectResponse(BaseModel):
     path: Optional[str]
+
+
+class EditCaseRequest(BaseModel):
+    suite_key: str
+    plan_key: str
+    case_key: str
+    remarks: Optional[str]

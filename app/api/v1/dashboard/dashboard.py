@@ -20,12 +20,10 @@ router = APIRouter()
 @router.get("/dashboard")
 async def dashboard(current_user_key: str = Depends(get_current_user)):
     await asyncio.sleep(1)
-    print(current_user_key)
     return {"message": "Hello World"}
 
 
 @router.get("/get_user_menu",response_model=ApiResponse[List[MenuResponse]])
 async def get_user_menu(current_user_key: str = Depends(get_current_user)):
     menus = await MenuServices.get_user_menu(current_user_key)
-    print(menus)
     return ApiResponse(data=menus) # type: ignore
