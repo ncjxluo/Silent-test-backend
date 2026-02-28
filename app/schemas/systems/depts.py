@@ -7,6 +7,7 @@
 from pydantic import BaseModel
 from typing import Optional,Dict,List,Union
 from datetime import datetime
+from app.schemas.base_res_model import BaseResponseModel
 
 
 class DeptRequest(BaseModel):
@@ -23,7 +24,7 @@ class EditDeptRequest(BaseModel):
     dept_name: str
     status: int
 
-class DeptItemResponse(BaseModel):
+class DeptItemResponse(BaseResponseModel):
 
     dept_key: Optional[str]
     dept_name: Optional[str]

@@ -20,6 +20,8 @@ router = APIRouter()
 ACCESS_TOKEN_EXPIRE_MINUTES=get_config().get("base").get("access_token_expire_minutes")
 REFRESH_TOKEN_EXPIRE_MINUTES=get_config().get("base").get("refresh_token_expire_minutes")
 
+cookie_lifecycle = REFRESH_TOKEN_EXPIRE_MINUTES * 60
+
 @router.post("/login", response_model=ApiResponse[LoginResponse])
 async def login(login_data: LoginRequest, response: Response):
     user = await UserServices.check_auth(login_data.username, login_data.password)
@@ -35,7 +37,7 @@ async def login(login_data: LoginRequest, response: Response):
         httponly=True,
         secure=False,  # 生产环境开启 HTTPS 时必须
         samesite="lax",  # CSRF 防护
-        max_age=3600
+        max_age=cookie_lifecycle
     )
     return ApiResponse[LoginResponse](data=LoginResponse(username=user.username, user_url=user.avatar, token=access_token), message="登录成功", status=200) # type: ignore
 

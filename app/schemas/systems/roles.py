@@ -7,9 +7,10 @@
 from pydantic import BaseModel
 from typing import Optional,Dict,List,Union
 from datetime import datetime
+from app.schemas.base_res_model import BaseResponseModel
 
 
-class RoleItemResponse(BaseModel):
+class RoleItemResponse(BaseResponseModel):
 
     role_key: Optional[str]
     role_name: Optional[str]

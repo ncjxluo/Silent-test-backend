@@ -7,9 +7,10 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from app.schemas.base_res_model import BaseResponseModel
 
 
-class AgentItem(BaseModel):
+class AgentItem(BaseResponseModel):
 
     agent_key: str
     agent_name: str

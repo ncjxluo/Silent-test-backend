@@ -39,6 +39,5 @@ async def del_role(objs:DelRoleRequest, current_user_key: str = Depends(get_curr
 
 @router.post("/edit_role",response_model=ApiResponse)
 async def del_role(objs:EditRoleRequest, current_user_key: str = Depends(get_current_user)):
-    res = {}
-    await RolesService.edit_role(objs.role_key,objs.role_name,objs.role_description,objs.initialCheckObj,objs.checkObj)
+    res = await RolesService.edit_role(objs.role_key,objs.role_name,objs.role_description,objs.initialCheckObj,objs.checkObj)
     return ApiResponse(data=res) # type: ignore

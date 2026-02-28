@@ -38,14 +38,14 @@ class RolesService:
     @staticmethod
     async def edit_role(role_key: str, role_name:str, role_desc:str, initial_list:List, menu_obj:List[dict]):
         check_list = [ item.get("menu_key") for item in menu_obj]
-        print(role_key)
-        print(role_name)
-        print(role_desc)
-        print(initial_list)
-        print(check_list)
-
+        print(f"角色的key{role_key}")
+        print(f"角色的名字{role_name}")
+        print(f"角色的描述{role_desc}")
+        print(f"初始的角色列表{initial_list}")
+        print(f"一通选择操作之后的角色列表{check_list}")
         i_list = set(check_list) - set(initial_list)
         d_list = set(initial_list) - set(check_list)
-        print(i_list)
-        print(d_list)
-        return {}
+        print(f"需要增加的{i_list}")
+        print(f"需要删除的{d_list}")
+        res = await RolesDao.edit_role(role_key,role_name,role_desc,i_list,d_list)
+        return res

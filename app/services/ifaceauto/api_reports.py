@@ -14,6 +14,7 @@ from collections import defaultdict
 from itertools import groupby
 from app.utils.my_util import is_empty
 import json
+import httpx
 
 
 class ApiReportsService:
@@ -40,13 +41,13 @@ class ApiReportsService:
         return dict(grouped)
 
     @staticmethod
-    async def get_all_plans(suite_key: str, current_page:int = 1, current_count:int = 30):
+    async def get_all_plans(suite_key: str, current_page:int = 1, current_count:int = 30, plan_name:str = None):
         if suite_key == '-1111111':
             plans: List[StrTestPlan] = []
             total_count = [0]
         else:
-            plans: List[StrTestPlan] = await ApiReportsDao.get_all_plans_new(suite_key, current_page, current_count)
-            total_count = await ApiReportsDao.get_all_plans_counts(suite_key)
+            plans: List[StrTestPlan] = await ApiReportsDao.get_all_plans_new(suite_key, current_page, current_count,plan_name)
+            total_count = await ApiReportsDao.get_all_plans_counts(suite_key,plan_name)
         print(plans)
         print(f"services 层 的{plans}")
         return {"total_count": total_count[0], "plans": plans}
@@ -78,16 +79,17 @@ class ApiReportsService:
         return CasesStatisticResponse(**basic_data, case_statistic=case_statistics)
 
     @staticmethod
-    async def get_cases(suite_key: str, plan_key: str, current_page:int = 1, current_count:int = 30, path:str = None, status:str = None, s_time:str = None, e_time:str = None):
-        if not is_empty(path) and all(is_empty(param) for param in [status,s_time,e_time]):
+    async def get_cases(suite_key: str, plan_key: str, current_page:int = 1, current_count:int = 30, path:str = None, status:str = None, s_time:str = None, e_time:str = None, fuzzy_search:str = None):
+        print(f"已进入{fuzzy_search}")
+        if not is_empty(path) and all(is_empty(param) for param in [status,s_time,e_time,fuzzy_search]):
             case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count)
             case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key)
-        elif not is_empty(path) and not is_empty(status) and all(is_empty(param) for param in [s_time,e_time]):
-            case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count,status=status)
-            case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status)
+        elif not is_empty(path) and not is_empty(status) and not is_empty(fuzzy_search) and all(is_empty(param) for param in [s_time,e_time]):
+            case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count,status=status,fuzzy_search=fuzzy_search)
+            case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status,fuzzy_search=fuzzy_search)
         else:
-            case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count, status=status, s_time=s_time, e_time=e_time, path=path)
-            case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status, s_time=s_time, e_time=e_time, path=path)
+            case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count, status=status, s_time=s_time, e_time=e_time, path=path,fuzzy_search=fuzzy_search)
+            case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status, s_time=s_time, e_time=e_time, path=path,fuzzy_search=fuzzy_search)
         result_list = []
         grouped = groupby(case_data, key=lambda x: x["case_key"])
         for case_key, group in grouped:
@@ -123,3 +125,59 @@ class ApiReportsService:
     async def edit_case(suite_key: str, plan_key: str, case_key:str, remarks:str):
         res = await ApiReportsDao.edit_case(suite_key, plan_key, case_key, remarks)
         return res
+
+    @staticmethod
+    async def submit_zentao(suite_key: str, plan_key: str):
+        #res = await ApiReportsDao.edit_case(suite_key, plan_key, case_key, remarks)
+        print(suite_key)
+        print(plan_key)
+        res_data = await ApiReportsDao.submit_zentao(suite_key, plan_key)
+        result_list = []
+        grouped = groupby(res_data, key=lambda x: x["case_key"])
+        for case_key, group in grouped:
+            dic1 = dict()
+            dic1["case_key"] = case_key
+            dic1["case_status"] = "失败"
+            dic1["case_step_name"] = ''
+            dic1["step_details"] = ''
+            for item1 in group:
+                if "plan_name" not in dic1:
+                    dic1["plan_name"] = item1.plan_name
+                dic1["case_step_name"] = dic1.get("case_step_name") + item1.step_name
+                dic1["case_env"] = item1.user_variables
+                dic1["step_details"] = f"""
+                {dic1.get("step_details")}<p></p><p>步骤:<p>{item1.step_id}</p><p>请求接口:</p>
+                <p>{item1.request_url}</p><p>请求参数:</p><p>{item1.request_param}</p><p>真实返回:</p><p>{item1.real_response}</p><p>该步骤的期望:</p><p>{item1.assert_res_details}</p>
+                """
+            result_list.append(dic1)
+        print(result_list[0])
+        async with httpx.AsyncClient() as client:
+            interface_prefix = "http://192.168.1.212/zentao/api.php/v1"
+            response = await client.post(
+                url= f"{interface_prefix}/tokens",
+                json={"account": "wcheng.luo", "password": "luowencheng"},
+                timeout=10  # 超时时间（可选）
+            )
+            token = response.json().get("token")
+            for index in range(0,1):
+                p_data = {
+                    "branch": 0,
+                    "title": f'【接口自动化】[{result_list[index].get("plan_name")}][{result_list[index].get("case_key")}][{result_list[index].get("case_step_name")}][{result_list[index].get("case_status")}]',
+                    "severity": 3,
+                    "pri": 3,
+                    "steps": f'<p>前置条件: {result_list[index].get("case_env")}</p><p></p><p>详情:</p>{result_list[index].get("step_details")}</p>',
+                    "type": "codeerror",
+                    "openedBuild": [
+                        "trunk"
+                    ]
+                }
+                response = await client.post(
+                    url=f"{interface_prefix}/products/20/bugs",
+                    json=p_data,
+                    headers = {
+                        "Content-Type": "application/json",  # 可加（但 json 参数会自动加，冗余）
+                        "token": token
+                    }
+                )
+                print(response)
+        return {}

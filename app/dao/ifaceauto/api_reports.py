@@ -65,10 +65,9 @@ class ApiReportsDao:
         return plans
 
     @staticmethod
-    async def get_all_plans_new(suite_key: str, current_page: int, current_count: int):
+    async def get_all_plans_new(suite_key: str, current_page: int, current_count: int, plan_name:str):
         async with async_session() as session:
-            result = await session.execute(
-                select(StrTestPlan.id,
+            subquery = select(StrTestPlan.id,
                        StrTestPlan.suite_key,
                        StrTestPlan.plan_key,
                        StrTestPlan.plan_name,
@@ -76,23 +75,48 @@ class ApiReportsDao:
                        func.sum(StrTestCase.case_status).label('failed_case_num'),
                        StrTestPlan.status,
                        StrTestPlan.created_at,
-                       StrTestPlan.updated_at)
-                .join(
+                       StrTestPlan.updated_at).join(
                     StrTestCase, and_(StrTestPlan.plan_key == StrTestCase.plan_key,StrTestPlan.suite_key == StrTestCase.suite_key)
-                )
-                .where(
+                ).where(
                     StrTestPlan.suite_key == suite_key
-                ).group_by(StrTestPlan.plan_key).order_by(desc(StrTestPlan.created_at)).offset((current_page - 1) * current_count).limit(current_count)
+                )
+            if not is_empty(plan_name):
+                subquery = subquery.where(
+                    StrTestPlan.plan_name.ilike(f'%{plan_name}%')
+                )
+            subquery = subquery.group_by(StrTestPlan.plan_key).order_by(desc(StrTestPlan.created_at)).offset((current_page - 1) * current_count).limit(current_count)
+
+            result = await session.execute(
+                subquery
+                # select(StrTestPlan.id,
+                #        StrTestPlan.suite_key,
+                #        StrTestPlan.plan_key,
+                #        StrTestPlan.plan_name,
+                #        StrTestPlan.plan_task_sum,
+                #        func.sum(StrTestCase.case_status).label('failed_case_num'),
+                #        StrTestPlan.status,
+                #        StrTestPlan.created_at,
+                #        StrTestPlan.updated_at)
+                # .join(
+                #     StrTestCase, and_(StrTestPlan.plan_key == StrTestCase.plan_key,StrTestPlan.suite_key == StrTestCase.suite_key)
+                # )
+                # .where(
+                #     StrTestPlan.suite_key == suite_key
+                # ).group_by(StrTestPlan.plan_key).order_by(desc(StrTestPlan.created_at)).offset((current_page - 1) * current_count).limit(current_count)
             )
             plans = result.mappings().all()
             print(f"dao层{plans}")
         return plans
 
     @staticmethod
-    async def get_all_plans_counts(suite_key: str):
+    async def get_all_plans_counts(suite_key: str, plan_name:str):
         async with async_session() as session:
-            result_count = await session.execute(
-                select(func.count(StrTestPlan.id)).where(StrTestPlan.suite_key == suite_key))
+            subquery = select(func.count(StrTestPlan.id)).where(StrTestPlan.suite_key == suite_key)
+            if not is_empty(plan_name):
+                subquery = subquery.where(
+                    StrTestPlan.plan_name.ilike(f'%{plan_name}%')
+                )
+            result_count = await session.execute(subquery)
             total_count = result_count.one()
             print(f"dao层{total_count}")
         return total_count
@@ -215,50 +239,12 @@ class ApiReportsDao:
 
 
     @staticmethod
-    async def get_case_datas(suite_key: str, plan_key: str, current_page:int, current_count: int, path:str = None, status:str = None, s_time:str = None, e_time:str = None):
+    async def get_case_datas(suite_key: str, plan_key: str, current_page:int, current_count: int, path:str = None, status:str = None, s_time:str = None, e_time:str = None, fuzzy_search:str = None):
         async with async_session() as session:
-            # case_group = StrTestCase.__table__.alias(name="case_group")
-            # case_child = StrTestCase.__table__.alias(name="case_child")
-            # subquery = select(distinct(case_group.c.case_key).label('case_key')).where(
-            #     and_(
-            #         case_group.c.suite_key == suite_key,
-            #         case_group.c.plan_key == plan_key
-            #     )
-            # )
-            # if not is_empty(status):
-            #     subquery = subquery.where(
-            #         func.LOCATE(status, case_group.c.assert_res_sign) > 0
-            #     )
-            #
-            # if not is_empty(s_time) and not is_empty(e_time) and not is_empty(path):
-            #     time_child_query = select(distinct(case_group.c.case_key)).where(and_(
-            #         cast(case_group.c.response_time, DECIMAL(10, 2)).between(s_time, e_time),
-            #         case_group.c.suite_key == suite_key,
-            #         case_group.c.plan_key == plan_key
-            #     ))
-            #     time_child_query = time_child_query.where(
-            #         case_group.c.request_url == path
-            #     )
-            #     subquery = subquery.where(case_group.c.case_key.in_(time_child_query))
-            # elif not is_empty(s_time) and not is_empty(e_time):
-            #     time_child_query = select(distinct(case_group.c.case_key)).where(and_(
-            #         cast(case_group.c.response_time, DECIMAL(10, 2)).between(s_time, e_time),
-            #         case_group.c.suite_key == suite_key,
-            #         case_group.c.plan_key == plan_key
-            #     ))
-            #     subquery = subquery.where(case_group.c.case_key.in_(time_child_query))
-            # # LOCATE
-            # subquery = subquery.offset((current_page -1) * current_count).limit(current_count).alias("t1")
-            # query = (
-            #     select(case_child)
-            #     .join(subquery, subquery.c.case_key == case_child.c.case_key)# type: ignore
-            #     .order_by(case_child.c.case_key,case_child.c.step_id,case_child.c.id)
-            # )
-
             case_main = StrTestCase.__table__.alias(name="case_main")
             case_step = StrTestCaseStep.__table__.alias(name="case_step")
 
-            subquery = select(distinct(case_main.c.case_key).label('case_key')).where(
+            subquery = select(distinct(case_main.c.case_key).label('case_key')).join(case_step, case_main.c.case_key == case_step.c.case_key).where(
                 and_(
                     case_main.c.suite_key == suite_key,
                     case_main.c.plan_key == plan_key
@@ -269,6 +255,11 @@ class ApiReportsDao:
                     case_main.c.case_status == int(status)
                 )
 
+            if not is_empty(fuzzy_search):
+                subquery = subquery.where(
+                    case_step.c.real_response.like(f"%{fuzzy_search}%")
+                )
+
             if not is_empty(s_time) and not is_empty(e_time):
                 time_child_query = select(distinct(case_step.c.case_key)).where(and_(
                     cast(case_step.c.response_time, DECIMAL(10, 2)).between(s_time, e_time)
@@ -277,6 +268,7 @@ class ApiReportsDao:
                     time_child_query = time_child_query.where(
                         case_step.c.request_url == path
                     )
+
                 subquery = subquery.where(case_main.c.case_key.in_(time_child_query))
             # LOCATE
             subquery = subquery.offset((current_page -1) * current_count).limit(current_count).alias("t1")
@@ -293,13 +285,12 @@ class ApiReportsDao:
 
             result = await session.execute(query)
             case_datas = result.mappings().all()
-            print("case_datas")
-            print(case_datas)
+
         return case_datas
 
 
     @staticmethod
-    async def get_case_key_count(suite_key: str, plan_key: str, path:str = None, status:str = None, s_time:str = None, e_time:str = None):
+    async def get_case_key_count(suite_key: str, plan_key: str, path:str = None, status:str = None, s_time:str = None, e_time:str = None, fuzzy_search:str = None):
         async with async_session() as session:
             query = select(func.count(distinct(StrTestCase.case_key))).join(
                 StrTestCaseStep, StrTestCase.case_key == StrTestCaseStep.case_key
@@ -313,6 +304,12 @@ class ApiReportsDao:
                 query = query.where(
                     StrTestCase.case_status == int(status)
                 )
+
+            if not is_empty(fuzzy_search):
+                query = query.where(
+                    StrTestCaseStep.real_response.like(f"%{fuzzy_search}%")
+                )
+
             if not is_empty(s_time) and not is_empty(e_time):
                 query = query.where(
                     cast(StrTestCaseStep.response_time, DECIMAL(10, 2)).between(s_time, e_time)
@@ -366,3 +363,39 @@ class ApiReportsDao:
             return {"msg": "更新成功"}
         except Exception as e:
             return {"msg": "更新失败"}
+
+    @staticmethod
+    async def submit_zentao(suite_key: str, plan_key: str):
+        try:
+            async with async_session() as session:
+                quary = select(
+                    StrTestPlan.plan_name,
+                    StrTestCase.case_key,
+                    StrTestCase.case_status,
+                    StrTestCaseStep.step_id,
+                    StrTestCaseStep.step_name,
+                    StrTestCaseStep.user_variables,
+                    StrTestCaseStep.request_url,
+                    StrTestCaseStep.request_param,
+                    StrTestCaseStep.real_response,
+                    StrTestCaseStep.assert_res_details
+                ).join(
+                    StrTestCase, and_(
+                        StrTestPlan.suite_key == StrTestCase.suite_key,
+                        StrTestPlan.plan_key == StrTestCase.plan_key
+                    )
+                ).join(
+                    StrTestCaseStep, StrTestCase.case_key == StrTestCaseStep.case_key # type: ignore
+                ).where(
+                    and_(
+                        StrTestPlan.suite_key == suite_key,
+                        StrTestPlan.plan_key == plan_key,
+                        StrTestCase.case_status == 1,
+                        StrTestCaseStep.assert_res_sign == '整体断言:失败'
+                    )
+                ).order_by(StrTestCase.case_key)
+                result = await session.execute(quary)
+                res_data = result.mappings().all()
+            return res_data
+        except Exception as e:
+            return {"msg": "查找失败"}

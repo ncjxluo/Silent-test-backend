@@ -8,9 +8,10 @@ from pydantic import BaseModel
 from typing import Optional,Dict,List,Union
 from pydantic import RootModel
 from datetime import datetime
+from app.schemas.base_res_model import BaseResponseModel
 
 
-class ApiSuiteResponse(BaseModel):
+class ApiSuiteResponse(BaseResponseModel):
 
     suite_key: Optional[str]
     suite_name: Optional[str]
@@ -23,7 +24,7 @@ class GroupedSuitesResponse(RootModel[Dict[str, List[ApiSuiteResponse]]]):
     pass
 
 
-class ApiPlansResponse(BaseModel):
+class ApiPlansResponse(BaseResponseModel):
 
     id: Optional[int]
     suite_key: Optional[str]
@@ -98,3 +99,8 @@ class EditCaseRequest(BaseModel):
     plan_key: str
     case_key: str
     remarks: Optional[str]
+
+
+class SubmitZentaoRequest(BaseModel):
+    suite_key: str
+    plan_key: str

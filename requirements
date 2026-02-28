@@ -7,3 +7,5 @@ loguru==0.7.3
 greenlet==3.2.4
 arrow==1.4.0
 sqlparse==0.5.3
+httpx==0.28.1
+asyncssh==2.21.0

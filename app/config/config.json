@@ -7,14 +7,14 @@
       "secret_key": "1qa@WS3ed",
       "algorithm": "HS256",
       "access_token_expire_minutes": 1,
-      "refresh_token_expire_minutes": 60
+      "refresh_token_expire_minutes": 600
     },
     "frontend": {
       "ip": "localhost",
       "port": "5173"
     },
     "db": {
-      "host": "192.168.3.220",
+      "host": "192.168.220.200",
       "port": 3306,
       "user": "admin",
       "password": "whdata123",

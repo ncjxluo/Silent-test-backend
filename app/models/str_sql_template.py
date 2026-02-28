@@ -7,6 +7,8 @@
 from sqlmodel import SQLModel, Field
 from sqlalchemy.dialects.mysql import LONGTEXT
 from typing import Optional
+from sqlalchemy import SMALLINT
+
 
 class StrSqlTemplate(SQLModel, table=True):
 
@@ -18,3 +20,4 @@ class StrSqlTemplate(SQLModel, table=True):
     sql_permission: Optional[str] = Field(max_length=2000, description="执行它需要的权限")
     sql_effect: str = Field(max_length=20, description="sql语句的作用，铺底 测试 结束")
     sql_exec_timing: str = Field(max_length=20, description="sql语句执行的时机")
+    is_enable: int = Field(sa_type=SMALLINT, default=1, description="是否启用,1=是 0=否")
