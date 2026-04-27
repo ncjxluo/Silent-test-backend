@@ -4,7 +4,8 @@
 # @File    : my_util.py
 # @Description : 一些辅助函数的设置
 from typing import List,Dict,Any
-
+import ast
+import json
 
 def is_empty(value):
     """判断值是否为 None 或空字符串"""
@@ -59,3 +60,42 @@ def my_formatting(v: str) -> str:
         v = v.replace('"', '')
         v = v.replace("'", '')
         return v.strip()
+
+
+# def my_literal_eval(v_type:str, val:str):
+#     if val is None or val == "":
+#         return val
+#     try:
+#         if v_type in ["integer", "long", "number"]:
+#             return int(val)
+#         elif v_type in ["object", "array"]:
+#             if "${" in val and "}" in val:
+#                 return val.strip('"')
+#             else:
+#                 return json.loads(val)
+#         elif v_type == "boolean":
+#             return ast.literal_eval(val)
+#         else:
+#             return val
+#     except:
+#         return val
+
+def normalize_example(value, type_):
+    if value is None:
+        return None
+    if type_ == "object":
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except:
+                return {}
+        return value
+    elif type_ == "array":
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except:
+                return []
+        return value
+    else:
+        return value

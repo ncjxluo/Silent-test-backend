@@ -26,3 +26,24 @@ class AgentItem(BaseResponseModel):
 class AgentResponse(BaseModel):
     total_count: int
     agents: List[AgentItem]
+
+
+class MergeAgentHeart(BaseModel):
+
+    agent_key: str
+    agent_name: str
+    status: int
+    agent_running_tasks: str
+    agent_max_tasks: str
+    agent_cpu: str
+    agent_memory: str
+    agent_io: str
+
+
+class AgentTaskResponse(BaseModel):
+
+    suite_key: str
+    plan_key: str
+    plan_name: str
+    case_content: str
+    doc_content: str

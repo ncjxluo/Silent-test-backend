@@ -19,6 +19,11 @@ class MessageService:
         return {"messages": messages}
 
     @staticmethod
+    async def get_message_channel_status(status:int):
+        messages = await MessageDao.get_message_channel_status(status)
+        return messages
+
+    @staticmethod
     async def setting_message_status(mes_key:str, is_enable:bool):
         status = 0
         if is_enable:

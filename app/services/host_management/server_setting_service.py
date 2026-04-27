@@ -3,10 +3,9 @@
 # @Author  : lwc
 # @File    : server_setting_service.py
 # @Description :
+
 import uuid
-
 from sqlalchemy.orm.sync import update
-
 from app.models.str_virtual_machine import StrVirtualMachine
 from app.utils.my_util import sort_filed_recursive
 from typing import List
@@ -140,6 +139,16 @@ class ServerSettingService:
         count = await ServerSettingDao.get_virtual_machine_count(group_key, fuzzy_search)
         return {"total_count": count[0], "virtual_machines": data}
 
+    @staticmethod
+    async def get_virtual_machine_status(status:str) -> dict:
+        """
+        获取可用虚拟机的方法
+        :param status: 状态
+        :return:
+        """
+        data = await ServerSettingDao.get_virtual_machine_status(status)
+        return data
+
 
     @staticmethod
     async def verify_virtual_machine(virtual_keys: List[str]) -> dict:
@@ -152,8 +161,6 @@ class ServerSettingService:
         v_res = []
         machine_info = {}
         for vm in vms:
-            print(
-                f"开始测试虚机：{vm.virtual_key}，IP：{vm.virtual_ip_address}，端口：{vm.virtual_ip_port}，用户名：{vm.virtual_username}")
             ssh_session = SSHSession(vm.virtual_ip_address, vm.virtual_ip_port, vm.virtual_username, vm.virtual_password)
             check_res = await ssh_session.check_ssh()
             if check_res.get("status") is True:
@@ -220,3 +227,13 @@ class ServerSettingService:
         """
         data = await ServerSettingDao.del_virtual_machine(virtual_key)
         return data
+
+    @staticmethod
+    async def virtual_machine_statistic() -> dict:
+        """
+        获取虚机的统计信息
+        :param
+        :return: 返回统计信息的字典
+        """
+        success_count, fail_count, unknown_count = await ServerSettingDao.virtual_machine_statistic()
+        return {"connection_success": success_count[0],"connection_fail": fail_count[0],"connection_unknown": unknown_count[0]}

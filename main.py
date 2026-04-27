@@ -25,7 +25,7 @@ app.include_router(api_router, prefix=API_STR)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # 你的前端地址
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],  # 允许所有方法
     allow_headers=["*"],  # 允许所有头

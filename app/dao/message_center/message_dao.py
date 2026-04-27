@@ -43,6 +43,20 @@ class MessageDao:
             ).where(StrSysMessage.is_delete==0)
             result = await session.execute(quary)
             res_data = result.scalars().all()
+        return res_data
+
+    @staticmethod
+    async def get_message_channel_status(status:int):
+        """
+        获取启用状态的消息通道数据
+        :return:
+        """
+        async with async_session() as session:
+            quary = select(
+                StrSysMessage
+            ).where(and_(StrSysMessage.is_delete==0,StrSysMessage.is_enable==status))
+            result = await session.execute(quary)
+            res_data = result.scalars().all()
             print(res_data)
         return res_data
 
@@ -80,3 +94,17 @@ class MessageDao:
         except Exception as e:
             return {"msg": "删除失败"}
         return res
+
+    @staticmethod
+    async def get_message(mes_key: str):
+        """
+        获取特定的消息通道数据
+        :return:
+        """
+        async with async_session() as session:
+            quary = select(
+                StrSysMessage
+            ).where(StrSysMessage.mes_key == mes_key)
+            result = await session.execute(quary)
+            res_data = result.scalars().all()
+        return res_data

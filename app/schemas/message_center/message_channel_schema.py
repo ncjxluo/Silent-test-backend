@@ -32,6 +32,10 @@ class MessageResponse(BaseModel):
 class MessagesResponse(BaseModel):
     messages: List[MessageResponse]
 
+class MessageStatusResponse(BaseModel):
+    mes_key: str
+    mes_name: str
+    mes_info: Optional[str] = None
 
 class SettingMessageRequest(BaseModel):
     mes_key: str

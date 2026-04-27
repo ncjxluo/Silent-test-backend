@@ -7,7 +7,7 @@
 from fastapi import APIRouter, Depends
 from app.core.dependencies import get_current_user
 from app.schemas.base import ApiResponse
-from app.schemas.host_management.server_setting import ServerGroupRequest, ServerGroupsResponse, DelServerGroupRequest, VirtualMachineRequest, VirtualMachineResponse, VerifyVirtualMachineRequest, VerifyVirtualMachineResponse, AllVirtualMachineResponse, DelVirtualMachineRequest,EditVirtualMachineRequest
+from app.schemas.host_management.server_setting import ServerGroupRequest, ServerGroupsResponse, DelServerGroupRequest, VirtualMachineRequest, VirtualMachineResponse, VerifyVirtualMachineRequest, VerifyVirtualMachineResponse, AllVirtualMachineResponse, DelVirtualMachineRequest,EditVirtualMachineRequest, VirtualMachineStatisticResponse,VirtualMachineStatusResponse
 from app.services.host_management.server_setting_service import ServerSettingService
 from typing import List
 
@@ -43,6 +43,11 @@ async def get_virtual_machine(group_key:str='8d5654a7-391f-48b9-9032-a8b4aae9b1b
     res = await ServerSettingService.get_virtual_machine(group_key, fuzzy_search, current_page, current_count)
     return ApiResponse(data=res) # type: ignore
 
+@router.get("/get_virtual_machine_status",response_model=ApiResponse[List[VirtualMachineStatusResponse]])
+async def get_virtual_machine_status(status:str = None, current_user_key: str = Depends(get_current_user)):
+    res = await ServerSettingService.get_virtual_machine_status(status)
+    return ApiResponse(data=res) # type: ignore
+
 
 @router.post("/verify_virtual_machine",response_model=ApiResponse[VerifyVirtualMachineResponse])
 async def verify_virtual_machine(obj:VerifyVirtualMachineRequest, current_user_key: str = Depends(get_current_user)):
@@ -63,9 +68,13 @@ async def del_virtual_machine(obj:DelVirtualMachineRequest, current_user_key: st
 
 @router.post("/edit_virtual_machine",response_model=ApiResponse)
 async def edit_virtual_machine(obj:EditVirtualMachineRequest, current_user_key: str = Depends(get_current_user)):
-    print(f'来了:{obj}')
     res = await ServerSettingService.edit_virtual_machine(
         obj.group_key,obj.virtual_key, obj.virtual_name, obj.virtual_env, obj.virtual_ip_address, obj.virtual_ip_port,
         obj.virtual_username, obj.virtual_password, obj.description
     )
+    return ApiResponse(data=res) # type: ignore
+
+@router.get("/virtual_machine_statistic",response_model=ApiResponse[VirtualMachineStatisticResponse])
+async def virtual_machine_statistic(current_user_key: str = Depends(get_current_user)):
+    res = await ServerSettingService.virtual_machine_statistic()
     return ApiResponse(data=res) # type: ignore

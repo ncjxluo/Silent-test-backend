@@ -13,31 +13,30 @@ from typing import List
 from collections import defaultdict
 from itertools import groupby
 from app.utils.my_util import is_empty
+from datetime import datetime
 import json
 import httpx
 
 
 class ApiReportsService:
 
-    # @staticmethod
-    # async def get_all_suites():
-    #     suites: List[StrTestSuite] = await ApiReportsDao.get_all_suites()
-    #     grouped = defaultdict(list)
-    #     for suite in suites:
-    #         date = suite.created_at.strftime("%Y-%m-%d")
-    #         grouped[date].append({"suite_key": suite.suite_key,"suite_name": suite.suite_name,"status": suite.status,"created_at": suite.created_at})
-    #     print(f"services 层 的{dict(grouped)}")
-    #     return dict(grouped)
-
     @staticmethod
     async def get_all_suites():
-        suites = await ApiReportsDao.get_all_suites_new()
+        suites = await ApiReportsDao.get_all_suites()
         grouped = defaultdict(list)
         for suite in suites:
-            date = suite.created_at.strftime("%Y-%m-%d")
+            # date = suite.created_at.strftime("%Y-%m-%d")
+            date = datetime.fromtimestamp(suite.created_at / 1000).strftime("%Y-%m-%d")
+            if suite.has_not_ready_plan > 0 and int(suite.progress) < 1:
+                suite_status = "running"
+            elif int(suite.progress) == 1 and suite.status != 'finish':
+                suite_status = "finish"
+            else:
+                suite_status = ""
+            if suite_status != "":
+                await ApiReportsDao.set_suite_status(suite.suite_key, suite_status)
             grouped[date].append({"suite_key": suite.suite_key, "suite_name": suite.suite_name, "status": suite.status,
-                                  "created_at": suite.created_at, "progress": str(int(suite.progress * 100))})
-        print(f"services 层 的{dict(grouped)}")
+                                  "created_at": suite.created_at, "updated_at": suite.updated_at, "progress": str(int(suite.progress * 100))})
         return dict(grouped)
 
     @staticmethod
@@ -48,8 +47,6 @@ class ApiReportsService:
         else:
             plans: List[StrTestPlan] = await ApiReportsDao.get_all_plans_new(suite_key, current_page, current_count,plan_name)
             total_count = await ApiReportsDao.get_all_plans_counts(suite_key,plan_name)
-        print(plans)
-        print(f"services 层 的{plans}")
         return {"total_count": total_count[0], "plans": plans}
 
     @staticmethod
@@ -78,41 +75,95 @@ class ApiReportsService:
                 case_statistics.append(CaseStatisticInterFace(**case_data))
         return CasesStatisticResponse(**basic_data, case_statistic=case_statistics)
 
+    # @staticmethod
+    # async def get_cases(suite_key: str, plan_key: str, current_page:int = 1, current_count:int = 30, path:str = None, status:str = None, s_time:str = None, e_time:str = None, fuzzy_search:str = None):
+    #     if not is_empty(path) and all(is_empty(param) for param in [status,s_time,e_time,fuzzy_search]):
+    #         case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count)
+    #         case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key)
+    #     elif not is_empty(path) and not is_empty(status) and not is_empty(fuzzy_search) and all(is_empty(param) for param in [s_time,e_time]):
+    #         case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count,status=status,fuzzy_search=fuzzy_search)
+    #         case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status,fuzzy_search=fuzzy_search)
+    #     else:
+    #         case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count, status=status, s_time=s_time, e_time=e_time, path=path,fuzzy_search=fuzzy_search)
+    #         case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status, s_time=s_time, e_time=e_time, path=path,fuzzy_search=fuzzy_search)
+    #     result_list = []
+    #     grouped = groupby(case_data, key=lambda x: x["case_key"])
+    #
+    #     for case_key, group in grouped:
+    #         dic1 = dict()
+    #         dic1["case_key"] = case_key
+    #         dic1["case_status"] = "success"
+    #         dic1["remarks"] = None
+    #         c_lis = list()
+    #         for item1 in group:
+    #             if dic1["remarks"] is None:
+    #                 dic1["remarks"] = item1.remarks
+    #             if "precheck" in item1.request_url:
+    #                 dic1["sql"] = json.loads(item1.request_param).get("sql")
+    #             if item1.case_status == 1 and dic1["case_status"] == "success":
+    #                 dic1["case_status"] = "fail"
+    #             if is_empty(path):
+    #                 c_lis.append(item1)
+    #             else:
+    #                 if item1.request_url == path:
+    #                     c_lis.append(item1)
+    #         dic1["child_item"] = c_lis
+    #         result_list.append(dic1)
+    #     return {"total_count": case_count[0], "cases": result_list}
+
     @staticmethod
-    async def get_cases(suite_key: str, plan_key: str, current_page:int = 1, current_count:int = 30, path:str = None, status:str = None, s_time:str = None, e_time:str = None, fuzzy_search:str = None):
-        print(f"已进入{fuzzy_search}")
-        if not is_empty(path) and all(is_empty(param) for param in [status,s_time,e_time,fuzzy_search]):
-            case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count)
-            case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key)
-        elif not is_empty(path) and not is_empty(status) and not is_empty(fuzzy_search) and all(is_empty(param) for param in [s_time,e_time]):
-            case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count,status=status,fuzzy_search=fuzzy_search)
-            case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status,fuzzy_search=fuzzy_search)
-        else:
-            case_data = await ApiReportsDao.get_case_datas(suite_key, plan_key, current_page, current_count, status=status, s_time=s_time, e_time=e_time, path=path,fuzzy_search=fuzzy_search)
-            case_count = await ApiReportsDao.get_case_key_count(suite_key, plan_key, status=status, s_time=s_time, e_time=e_time, path=path,fuzzy_search=fuzzy_search)
+    async def get_cases(suite_key: str, plan_key: str, current_page: int = 1, current_count: int = 30, path: str = None,
+                        status: str = None, s_time: str = None, e_time: str = None, fuzzy_search: str = None):
+        case_keys, total_count = await ApiReportsDao.get_paginated_case_keys(
+            suite_key, plan_key, current_page, current_count, path, s_time, e_time, fuzzy_search, status
+        )
+        print(f"case_keys{case_keys}")
+        if not case_keys:
+            return {"total_count": total_count, "cases": []}
+        detail_resp = await ApiReportsDao.get_case_steps(suite_key, plan_key, case_keys)
+        all_steps = [hit["_source"] for hit in detail_resp["hits"]["hits"]]
+        grouped_steps = defaultdict(list)
+        case_status_map = {}  # case_key -> status
+        for step in all_steps:
+            ck = step["case_key"]
+            grouped_steps[ck].append(step)
+            if ck not in case_status_map:
+                case_status_map[ck] = 0
+            if step.get("assert_res_sign") == "整体断言:失败":
+                case_status_map[ck] = 1
+        case_map = await ApiReportsDao.get_case_datas(case_keys)
         result_list = []
-        grouped = groupby(case_data, key=lambda x: x["case_key"])
-        for case_key, group in grouped:
-            dic1 = dict()
-            dic1["case_key"] = case_key
-            dic1["case_status"] = "success"
-            dic1["remarks"] = None
-            c_lis = list()
-            for item1 in group:
-                if dic1["remarks"] is None:
-                    dic1["remarks"] = item1.remarks
-                if "precheck" in item1.request_url:
-                    dic1["sql"] = json.loads(item1.request_param).get("sql")
-                if item1.case_status == 1 and dic1["case_status"] == "success":
-                    dic1["case_status"] = "fail"
-                if is_empty(path):
-                    c_lis.append(item1)
-                else:
-                    if item1.request_url == path:
-                        c_lis.append(item1)
-            dic1["child_item"] = c_lis
-            result_list.append(dic1)
-        return {"total_count": case_count[0], "cases": result_list}
+        for ck in case_keys:  # 用第一步返回的顺序，保证分页稳定
+            case_info = case_map.get(ck, {
+                "suite_key": suite_key,
+                "plan_key": plan_key,
+                "case_key": ck,
+                "remarks": None,
+                "created_at": None,
+                "updated_at": None,
+            })
+            case_info["case_status"] = "success" if case_status_map.get(ck, 0) == 0 else "fail"
+            steps = grouped_steps.get(ck, [])
+            for step in steps:
+                if "step_id" in step and isinstance(step["step_id"], (int, float)):
+                    step["step_id"] = str(step["step_id"])  # 转成字符串
+                if "user_variables" in step and isinstance(step["user_variables"], dict):
+                    step["user_variables"] = json.dumps(step["user_variables"], ensure_ascii=False)
+                request_url = step.get("request_url", "")
+                if "precheck" in request_url and request_url:
+                    req_param = step.get("request_param")
+                    if isinstance(req_param, str):
+                        param_dict = json.loads(req_param)
+                    elif isinstance(req_param, dict):
+                        param_dict = req_param
+                    else:
+                        param_dict = {}
+                    sql_value = param_dict.get("sql") if isinstance(param_dict, dict) else None
+                    if sql_value is not None:
+                        case_info["sql"] = sql_value  # 直接在 step 上新增 sql 字段
+            case_info["child_item"] = grouped_steps.get(ck, [])
+            result_list.append(case_info)
+        return {"total_count": total_count, "cases": result_list}
 
 
     @staticmethod
@@ -128,9 +179,6 @@ class ApiReportsService:
 
     @staticmethod
     async def submit_zentao(suite_key: str, plan_key: str):
-        #res = await ApiReportsDao.edit_case(suite_key, plan_key, case_key, remarks)
-        print(suite_key)
-        print(plan_key)
         res_data = await ApiReportsDao.submit_zentao(suite_key, plan_key)
         result_list = []
         grouped = groupby(res_data, key=lambda x: x["case_key"])
@@ -150,7 +198,6 @@ class ApiReportsService:
                 <p>{item1.request_url}</p><p>请求参数:</p><p>{item1.request_param}</p><p>真实返回:</p><p>{item1.real_response}</p><p>该步骤的期望:</p><p>{item1.assert_res_details}</p>
                 """
             result_list.append(dic1)
-        print(result_list[0])
         async with httpx.AsyncClient() as client:
             interface_prefix = "http://192.168.1.212/zentao/api.php/v1"
             response = await client.post(
@@ -179,5 +226,45 @@ class ApiReportsService:
                         "token": token
                     }
                 )
-                print(response)
         return {}
+
+    @staticmethod
+    async def monitor_report(start_time:int, end_time:int):
+        res = await ApiReportsDao.monitor_report(start_time, end_time)
+        print(f"监控数据{res}")
+        # grouped = defaultdict(list)
+        monitor_data = {}
+        metrics = []
+        alerts = []
+        count = 0
+        for item in res:
+            metrics.append(
+                {
+                    "timestamp": item.get("created_at"),
+                    "container": item.get("container_name"),
+                    "cpu": item.get("cpu_usage"),
+                    "mem": item.get("mem_percent"),
+                    "io": item.get("blkio_bytes"),
+                    "lock": item.get("lock_wait"),
+                    "alert": {
+                      "has": 'false' if item.get("trigger_time",'无') == '无' else 'true',
+                      "flameGraphUrl": item.get("file_path")
+                    }
+                }
+            )
+            if item.get("trigger_time",'无') != '无':
+                alerts.append({
+                    "id": f'id-{count}',
+                    "timestamp": item.get("trigger_time"),
+                    "container": item.get("container_name"),
+                    "cpu": item.get("cpu_usage"),
+                    "mem": item.get("mem_percent"),
+                    "io": item.get("blkio_bytes"),
+                    "lock": item.get("lock_wait"),
+                    "type": item.get("event_type"),
+                    "flameGraphUrl": item.get("file_path"),
+                })
+                count = count + 1
+        monitor_data["metrics"] = metrics
+        monitor_data["alerts"] = alerts
+        return monitor_data

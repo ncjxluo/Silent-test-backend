@@ -34,3 +34,12 @@ def get_config() -> dict:
     config_path = get_realpath("config/config.json")
     with open(config_path, "r", encoding="utf-8") as f:
         return json.load(f).get("str-config")
+
+def get_storage_profiler_path():
+    """
+    获取存储目录
+    :return:
+    """
+    monitor_profiler_path = get_realpath("static/monitor_profiler")
+
+    return monitor_profiler_path

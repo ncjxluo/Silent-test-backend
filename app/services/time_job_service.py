@@ -15,6 +15,8 @@ class TimeJobServices:
         print(f"agents参数{agents}")
         now = datetime.now()
         for agent in agents:
+            print(f"agent参数{agent}")
             if agent.updated_at and (now - agent.updated_at).total_seconds() > heartbeat_timeout:
+                print(f"agent_key:{agent.agent_key}已经超过{heartbeat_timeout}秒没有更新了")
                 if agent.agent_status != 0:
                     await AgentDao.set_api_agent_status(agent.agent_key, 0)

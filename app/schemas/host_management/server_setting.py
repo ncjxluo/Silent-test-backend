@@ -5,7 +5,6 @@
 # @Description :
 
 from pydantic import BaseModel
-from app.schemas.base_res_model import BaseResponseModel
 from typing import Optional,Dict,List,Union
 from datetime import datetime
 from app.schemas.base_res_model import BaseResponseModel
@@ -79,6 +78,9 @@ class VirtualMachineResponse(BaseModel):
     total_count: int
     virtual_machines: List[VirtualMachineItem]
 
+class VirtualMachineStatusResponse(BaseModel):
+    virtual_key: str
+    virtual_name: str
 
 class AllVirtualMachineResponse(BaseModel):
     virtual_machines: Optional[List[VirtualMachineItem]] = []
@@ -86,3 +88,9 @@ class AllVirtualMachineResponse(BaseModel):
 
 class VerifyVirtualMachineResponse(BaseModel):
     result: List
+
+
+class VirtualMachineStatisticResponse(BaseModel):
+    connection_success: int
+    connection_fail: int
+    connection_unknown: int

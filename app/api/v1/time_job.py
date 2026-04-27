@@ -15,6 +15,7 @@ async  def api_agent_watchdog():
     check_interval = 200
     heartbeat_timeout = 15
     while True:
+        print("看门狗-开始检查api agent")
         await TimeJobServices.set_api_status(heartbeat_timeout)
         await asyncio.sleep(check_interval)
 

@@ -41,3 +41,8 @@ class UserRequest(BaseModel):
 
 class DelUserRequest(BaseModel):
     user_key: str
+
+class StatisticsInfoResponse(BaseModel):
+
+    total_count: int
+    online_count: int

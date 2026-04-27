@@ -8,8 +8,11 @@ from fastapi import APIRouter, Depends
 from typing import List
 from app.core.dependencies import get_current_user
 from app.services.ifaceauto.api_reports import ApiReportsService
-from app.schemas.ifaceauto.api_report_schema import GroupedSuitesResponse, PlansResponse, CasesStatisticResponse,CasesResponse,PathSelectResponse,EditCaseRequest,SubmitZentaoRequest
+from app.schemas.ifaceauto.api_report_schema import GroupedSuitesResponse, PlansResponse, CasesStatisticResponse,CasesResponse,PathSelectResponse,EditCaseRequest,SubmitZentaoRequest,MonitorReportRequest
 from app.schemas.base import ApiResponse
+from fastapi.responses import StreamingResponse
+import os
+from app.utils.helper import get_realpath
 
 
 router = APIRouter()
@@ -22,7 +25,7 @@ async def get_api_all_reports(current_user_key: str = Depends(get_current_user))
 
 @router.get("/get_api_all_plans",response_model=ApiResponse[PlansResponse])
 async def get_api_all_plans(suite_key:str = '-1111111', current_page:int = 1, current_count:int = 30, plan_name:str = None, current_user_key: str = Depends(get_current_user)):
-    plans = await ApiReportsService.get_all_plans(suite_key, current_page, current_count,plan_name)
+    plans = await ApiReportsService.get_all_plans(suite_key, current_page, current_count, plan_name)
     return ApiResponse(data=plans) # type: ignore
 
 
@@ -59,3 +62,39 @@ async def submit_zentao(obj:SubmitZentaoRequest, current_user_key: str = Depends
     await ApiReportsService.submit_zentao(obj.suite_key, obj.plan_key)
     res = {}
     return ApiResponse(data=res) # type: ignore
+
+
+@router.post("/monitor_report", response_model=ApiResponse)
+async def monitor_report(obj:MonitorReportRequest, current_user_key: str = Depends(get_current_user)):
+
+    res = await ApiReportsService.monitor_report(obj.start_time, obj.end_time)
+
+    return ApiResponse(data=res) # type: ignore
+
+
+@router.get("/download_jfr", response_model=ApiResponse)
+def download_jfr(url: str):
+    # client = httpx.AsyncClient()
+    # 2. 流式请求（和 requests 的 stream=True 完全一样）
+    # r = client.get(url)
+    # 2. 强制浏览器下载（关键！）
+    res = {"msg": "文件不存在"}
+    all_path = get_realpath(url)
+    if not os.path.exists(all_path):
+        return ApiResponse(data=res) # type: ignore
+    name_list = url.split("/")
+    # 3. 返回流式下载
+    return StreamingResponse(
+        file_iterator(all_path),
+        headers={
+            "Content-Disposition": f'attachment; filename="{name_list[len(name_list)-1]}"'
+        },
+        media_type="application/octet-stream"
+    )
+
+    # return ApiResponse(data=res) # type: ignore
+
+def file_iterator(file_path: str, chunk_size=1024 * 1024):
+    with open(file_path, "rb") as f:
+        while chunk := f.read(chunk_size):
+            yield chunk

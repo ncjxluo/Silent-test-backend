@@ -20,6 +20,12 @@
       "password": "whdata123",
       "schema": "str_test_lwc"
     },
+    "es": {
+      "host": "192.168.220.200",
+      "port": 9200,
+      "user": "elastic",
+      "password": "whdata123"
+    },
     "redis": {
 
     }

@@ -1,0 +1,28 @@
+# -*- coding: utf-8 -*-
+# @Time    : 2026/3/28 15:25
+# @Author  : lwc
+# @File    : str_api_test_case.py
+# @Description : 接口测试的用例表
+
+from sqlmodel import SQLModel, Field
+from typing import Optional
+from datetime import datetime
+from sqlalchemy.dialects.mysql import LONGTEXT, TEXT
+import uuid
+from sqlalchemy import SMALLINT
+
+
+class StrApiTestCase(SQLModel, table=True):
+
+    __tablename__ = 'str_api_test_case'
+
+    case_key:str = Field(max_length=100, primary_key=True, default_factory=lambda: str(uuid.uuid4()), description="文档的uuid")
+    case_project_key: str = Field(max_length=100, index=True, description="项目的uuid")
+    case_folder_key: Optional[str]  = Field(max_length=100, index=True, default=None, description="组的uuid")
+    case_branch_key: str = Field(max_length=100, index=True, description="用例的分支")
+    case_name: str = Field(max_length=50, description="用例的名称,也是标题")
+    case_content: str = Field(sa_type=TEXT, description="用例的xml内容")
+    case_struct_data:str = Field(sa_type=TEXT, description="用例前端展示的结构化数据")
+    is_delete: int = Field(sa_type=SMALLINT, default=0, description="是否删除,1=是 0=否")
+    created_at: datetime = Field(default_factory=lambda: datetime.now())
+    updated_at: Optional[datetime] = Field(default_factory=lambda: datetime.now())

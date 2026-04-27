@@ -11,12 +11,13 @@ from datetime import datetime
 from app.schemas.base_res_model import BaseResponseModel
 
 
-class ApiSuiteResponse(BaseResponseModel):
+class ApiSuiteResponse(BaseModel):
 
     suite_key: Optional[str]
     suite_name: Optional[str]
     status: Optional[str]
-    created_at: Optional[datetime]
+    created_at: Optional[int]
+    updated_at: Optional[int]
     progress: Optional[str]
 
 
@@ -24,17 +25,18 @@ class GroupedSuitesResponse(RootModel[Dict[str, List[ApiSuiteResponse]]]):
     pass
 
 
-class ApiPlansResponse(BaseResponseModel):
+class ApiPlansResponse(BaseModel):
 
     id: Optional[int]
     suite_key: Optional[str]
     plan_key: Optional[str]
     plan_name: Optional[str]
     plan_task_sum: Optional[int]
+    executed_case_num: Optional[int]
     failed_case_num: Optional[int]
     status: Optional[str]
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
+    created_at: Optional[int]
+    updated_at: Optional[int]
 
 
 class PlansResponse(BaseModel):
@@ -104,3 +106,8 @@ class EditCaseRequest(BaseModel):
 class SubmitZentaoRequest(BaseModel):
     suite_key: str
     plan_key: str
+
+class MonitorReportRequest(BaseModel):
+
+    start_time: int
+    end_time: int

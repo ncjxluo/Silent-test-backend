@@ -3,7 +3,7 @@
 # @Author  : lwc
 # @File    : server_setting_dao.py
 # @Description :
-
+from sqlalchemy.sql.functions import count
 from app.core.db import async_session
 from app.models.str_server_group import StrServerGroup
 from sqlmodel import select,delete,update,and_,desc,func,or_
@@ -132,7 +132,6 @@ class ServerSettingDao:
         """
         try:
             async with async_session() as session:
-                print(f'来了:{description}')
                 edit_vm = update(StrVirtualMachine).where(and_(
                     StrVirtualMachine.virtual_key == virtual_key
                 )).values(
@@ -286,3 +285,34 @@ class ServerSettingDao:
             return {"msg": "删除成功"}
         except Exception as e:
             return {"msg": "删除失败"}
+
+    @staticmethod
+    async def virtual_machine_statistic():
+        """
+        获取虚机不同状态的个数
+        :return:
+        """
+        async with async_session() as session:
+            s_sql = select(count(StrVirtualMachine.virtual_key)).where(StrVirtualMachine.status == '可连接')
+            f_sql = select(count(StrVirtualMachine.virtual_key)).where(StrVirtualMachine.status == '无法连接')
+            u_sql = select(count(StrVirtualMachine.virtual_key)).where(StrVirtualMachine.status == '未连接')
+            success_result = await session.execute(s_sql)
+            success_count = success_result.one()
+            fail_result = await session.execute(f_sql)
+            fail_count = fail_result.one()
+            unknown_result = await session.execute(u_sql)
+            unknown_count = unknown_result.one()
+            return success_count, fail_count, unknown_count
+
+    @staticmethod
+    async def get_virtual_machine_status(status:str) -> dict:
+        async with async_session() as session:
+            query = select(
+                StrVirtualMachine.virtual_key,
+                StrVirtualMachine.virtual_name,
+            ).where(and_(
+                StrVirtualMachine.status == status
+            ))
+            result = await session.execute(query)
+            res_data = result.mappings().all()
+        return res_data

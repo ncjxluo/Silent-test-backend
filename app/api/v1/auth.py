@@ -14,6 +14,7 @@ from datetime import timedelta
 from app.utils.custom_exception import exception_403
 from app.core.security import refresh_token as ref_token
 from app.services.user_service import UserServices
+from app.utils.str_operation_decorator import log_operation
 
 
 router = APIRouter()
@@ -23,6 +24,7 @@ REFRESH_TOKEN_EXPIRE_MINUTES=get_config().get("base").get("refresh_token_expire_
 cookie_lifecycle = REFRESH_TOKEN_EXPIRE_MINUTES * 60
 
 @router.post("/login", response_model=ApiResponse[LoginResponse])
+@log_operation("登录", "登录", "登录系统")
 async def login(login_data: LoginRequest, response: Response):
     user = await UserServices.check_auth(login_data.username, login_data.password)
     if user is None:

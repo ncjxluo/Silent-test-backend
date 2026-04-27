@@ -25,5 +25,6 @@ class StrSysUser(SQLModel, table=True):
     phone: Optional[str] = Field(max_length=64,default=None,description="用户的电话")
     status: Optional[int] = Field(sa_type=SMALLINT,default=1,description="用户的启用状态,1=启用 0=禁用")
     dept_key: Optional[str] = Field(max_length=100,default=None,description="用户所属的部门")
+    heartbeat_time: Optional[datetime] = Field(default=None,index=True,description="用户最后心跳的时间")
     created_at: datetime = Field(default_factory=lambda: datetime.now())
     updated_at: Optional[datetime] = Field(default_factory=lambda: datetime.now())
